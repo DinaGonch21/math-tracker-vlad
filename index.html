@@ -23,12 +23,12 @@
         
         body { background: var(--bg-color); color: var(--text-main); padding: 20px; max-width: 1200px; margin: 0 auto; }
 
-        h1 { text-align: center; color: var(--primary); margin-bottom: 30px; font-weight: 600; }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 30px; font-weight: 600; font-size: 1.8em; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(74,111,165,0.08); text-align: center; }
         .stat-value { font-size: 2em; font-weight: 700; color: var(--primary); }
-        .stat-label { color: var(--text-secondary); font-size: 0.9em; margin-top: 5px; }
+        .stat-label { color: var(--text-secondary); font-size: 0.85em; margin-top: 5px; }
 
         .goal-banner {
             background: linear-gradient(135deg, var(--primary) 0%, #6b8cbc 100%);
@@ -44,7 +44,7 @@
         .goal-banner:hover { transform: translateY(-2px); }
         .goal-banner h2 { font-size: 1.3em; margin-bottom: 10px; }
         .goal-banner .goal-value { font-size: 2.5em; font-weight: 700; margin: 10px 0; }
-        .goal-banner .goal-text { font-size: 1.1em; opacity: 0.9; }
+        .goal-banner .goal-quote { font-size: 1em; opacity: 0.95; font-style: italic; margin-top: 8px; }
 
         .chart-container { background: var(--card-bg); padding: 20px; border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(74,111,165,0.08); margin-bottom: 30px; height: 300px; }
 
@@ -76,9 +76,38 @@
         }
         .test-content .goal-achieved.show { display: block; }
 
-        .task-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9em; }
-        .task-table th, .task-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--primary-light); }
-        .task-table th { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        /* Адаптивная таблица */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        .task-table { 
+            width: 100%; 
+            min-width: 700px;
+            border-collapse: collapse; 
+            font-size: 0.9em; 
+        }
+        .task-table th, .task-table td { 
+            padding: 10px 12px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--primary-light);
+            white-space: nowrap;
+        }
+        .task-table th { 
+            background: var(--primary-light); 
+            color: var(--primary); 
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        .task-table td { white-space: normal; }
+        .task-table td:first-child,
+        .task-table th:first-child {
+            white-space: nowrap;
+        }
         .correct { color: var(--success); font-weight: 600; }
         .incorrect { color: var(--error); font-weight: 600; }
 
@@ -175,35 +204,51 @@
             cursor: pointer;
         }
 
-        .view-mode-notice {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            display: none;
+        .target-badge {
+            background: var(--warning);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
         }
-        .view-mode-notice.show { display: block; }
+
+        /* Подсказка о прокрутке таблицы на мобильных */
+        .table-scroll-hint {
+            display: none;
+            text-align: center;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            font-style: italic;
+        }
 
         @media (max-width: 768px) {
-            .test-header { flex-direction: column; align-items: flex-start; }
-            .test-meta { flex-direction: column; gap: 5px; }
+            body { padding: 10px; }
+            h1 { font-size: 1.4em; margin-bottom: 20px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .stat-card { padding: 15px 10px; }
+            .stat-value { font-size: 1.6em; }
+            .stat-label { font-size: 0.75em; }
+            .test-header { flex-direction: column; align-items: flex-start; padding: 15px; }
+            .test-meta { flex-direction: column; gap: 5px; font-size: 0.85em; }
+            .test-content.open { padding: 15px; }
+            .table-scroll-hint { display: block; }
+            .goal-banner .goal-value { font-size: 2em; }
+            .btn { padding: 10px 16px; font-size: 0.9em; }
+            .btn-sm { padding: 5px 10px; font-size: 0.8em; }
+            .actions-bar { flex-direction: column; }
+            .btn-outline { margin-right: 0; margin-bottom: 5px; }
         }
     </style>
 </head>
 <body>
     <h1>📊 ЕГЭ Математика 2026/2027 — Трекер Влада</h1>
 
-    <div class="view-mode-notice" id="viewModeNotice">
-        👁️ Режим просмотра. Для редактирования откройте сайт на ноутбуке.
-    </div>
-
     <div class="goal-banner" id="goalBanner">
         <h2>🎯 Целевой результат</h2>
         <div class="goal-value" id="goalValue">80+ баллов</div>
-        <div class="goal-text">Нажмите, чтобы изменить цель</div>
+        <div class="goal-quote">«Маленькие шаги каждый день ведут к большой цели»</div>
     </div>
 
     <div class="stats-grid" id="statsGrid"></div>
@@ -241,6 +286,7 @@
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>🎯 Целевой балл для этого пробника</label>
                     <input type="number" id="targetScore" min="0" max="100" placeholder="Например: 80">
+                    <small style="color: var(--text-secondary); display: block; margin-top: 5px;">К какому результату стремитесь в этом пробнике?</small>
                 </div>
             </div>
             <div class="form-group">
@@ -293,12 +339,10 @@ let editingIndex = null;
 let globalGoal = 80;
 let isViewMode = false;
 
-// Check if we're on GitHub Pages (view mode)
 const isGitHubPages = window.location.hostname.includes('github.io');
 
 if (isGitHubPages) {
     isViewMode = true;
-    document.getElementById('viewModeNotice').classList.add('show');
     document.getElementById('actionsBar').style.display = 'none';
     document.getElementById('goalBanner').style.cursor = 'default';
 }
@@ -326,17 +370,11 @@ document.addEventListener('paste', function(e) {
                 const blob = items[i].getAsFile();
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    if (activeElement.classList.contains('task-condition')) {
-                        const preview = document.getElementById('conditionPreview' + formId);
-                        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
-                        preview.dataset.image = event.target.result;
-                        preview.parentElement.querySelector('.upload-area').classList.add('has-image');
-                    } else {
-                        const preview = document.getElementById('solutionPreview' + formId);
-                        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
-                        preview.dataset.image = event.target.result;
-                        preview.parentElement.querySelector('.upload-area').classList.add('has-image');
-                    }
+                    const fieldName = activeElement.dataset.field || 'condition';
+                    const preview = document.getElementById(fieldName + 'Preview' + formId);
+                    preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
+                    preview.dataset.image = event.target.result;
+                    preview.parentElement.querySelector('.upload-area').classList.add('has-image');
                 };
                 reader.readAsDataURL(blob);
             }
@@ -396,8 +434,8 @@ function renderStats() {
     document.getElementById('statsGrid').innerHTML = `
         <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Пробников</div></div>
         <div class="stat-card"><div class="stat-value">${avgPercent}%</div><div class="stat-label">Средний %</div></div>
-        <div class="stat-card"><div class="stat-value">${bestSecondary}</div><div class="stat-label">Лучший вторичный</div></div>
-        <div class="stat-card"><div class="stat-value">${lastSecondary}</div><div class="stat-label">Последний вторичный</div></div>
+        <div class="stat-card"><div class="stat-value">${bestSecondary}</div><div class="stat-label">Лучший результат</div></div>
+        <div class="stat-card"><div class="stat-value">${lastSecondary}</div><div class="stat-label">Последний результат</div></div>
     `;
 }
 
@@ -408,7 +446,7 @@ function renderChart() {
     chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: tests.map(t => `#${t.number}`),
+            labels: tests.map(t => `П${t.number}`),
             datasets: [{
                 label: 'Вторичные баллы',
                 data: tests.map(t => t.secondary),
@@ -436,60 +474,79 @@ function renderChart() {
     });
 }
 
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+
 function renderTests() {
     const container = document.getElementById('testsList');
     container.innerHTML = '';
     
     [...tests].reverse().forEach((test, idx) => {
         const realIndex = tests.length - 1 - idx;
-        const goalAchieved = test.secondary >= globalGoal;
+        const goalAchieved = test.secondary >= (test.targetScore || globalGoal);
+        const targetDisplay = test.targetScore ? test.targetScore : globalGoal;
         const card = document.createElement('div');
         card.className = 'test-card';
         card.innerHTML = `
             <div class="test-header" onclick="toggleTest(${realIndex})">
-                <div class="test-title">Пробник #${test.number} — ${test.date}</div>
+                <div class="test-title">Пробник #${test.number} — ${formatDate(test.date)}</div>
                 <div class="test-meta">
                     <span>📝 Первичный: ${test.primary}/32</span>
-                    <span>🎯 Вторичный: ${test.secondary}/100</span>
-                    <span> ${test.percent}%</span>
+                    <span> Вторичный: ${test.secondary}/100</span>
+                    <span class="target-badge">🎯 Цель: ${targetDisplay}</span>
+                    <span>📊 ${test.percent}%</span>
                     ${goalAchieved ? '<span style="color: var(--success); font-weight: 600;">✓ Цель!</span>' : ''}
                 </div>
             </div>
             <div class="test-content" id="testContent${realIndex}">
-                ${goalAchieved ? '<div class="goal-achieved show">🎉 Поздравляем! Цель в ' + globalGoal + ' баллов достигнута!</div>' : ''}
+                ${goalAchieved ? '<div class="goal-achieved show">🎉 Поздравляем! Цель в ' + targetDisplay + ' баллов достигнута!</div>' : ''}
                 <p><strong>Вывод:</strong> ${test.conclusion || '—'}</p>
                 
                 <div class="toggle-section">
                     <button class="btn btn-outline btn-sm" onclick="toggleSection('tasks${realIndex}')">📋 Таблица результатов</button>
                     <div class="hidden-content" id="tasks${realIndex}">
-                        <table class="task-table">
-                            <tr><th>№</th><th>Тема</th><th>Макс</th><th>Получено</th><th>Результат</th><th>Тип ошибки</th><th>Комментарий</th></tr>
-                            ${test.tasks.map(t => `
-                                <tr>
-                                    <td>${t.num}</td>
-                                    <td>${t.topic}</td>
-                                    <td>${t.max}</td>
-                                    <td>${t.got}</td>
-                                    <td class="${t.correct ? 'correct' : 'incorrect'}">${t.correct ? '✓' : '✗'}</td>
-                                    <td>${t.errorType || '—'}</td>
-                                    <td>${t.comment || '—'}</td>
-                                </tr>
-                            `).join('')}
-                        </table>
+                        <div class="table-scroll-hint">← Прокрутите таблицу вправо →</div>
+                        <div class="table-wrapper">
+                            <table class="task-table">
+                                <tr><th>№</th><th>Тема</th><th>Макс</th><th>Получено</th><th>Результат</th><th>Тип ошибки</th><th>Комментарий</th></tr>
+                                ${test.tasks.map(t => `
+                                    <tr>
+                                        <td>${t.num}</td>
+                                        <td>${t.topic}</td>
+                                        <td>${t.max}</td>
+                                        <td>${t.got}</td>
+                                        <td class="${t.correct ? 'correct' : 'incorrect'}">${t.correct ? '✓' : '✗'}</td>
+                                        <td>${t.errorType || '—'}</td>
+                                        <td>${t.comment || '—'}</td>
+                                    </tr>
+                                `).join('')}
+                            </table>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="toggle-section">
-                    <button class="btn btn-outline btn-sm" onclick="toggleSection('conditions${realIndex}')">📄 Условия задач</button>
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('conditions${realIndex}')"> Условия задач</button>
                     <div class="hidden-content" id="conditions${realIndex}">
                         ${test.tasks.map(t => `<p><strong>Задание ${t.num}:</strong><br>${formatContent(t.condition)}</p><hr style="margin:10px 0;border:none;border-top:1px solid #dce6f5">`).join('')}
                     </div>
                 </div>
 
                 <div class="toggle-section">
-                    <button class="btn btn-outline btn-sm" onclick="toggleSection('solutions${realIndex}')">✏️ Решения Влада (фото)</button>
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('solutions${realIndex}')">✏️ Решения Влада</button>
                     <div class="hidden-content" id="solutions${realIndex}">
                         ${test.tasks.map(t => `<p><strong>Задание ${t.num}:</strong><br>${formatContent(t.studentSolution)}</p><hr style="margin:10px 0;border:none;border-top:1px solid #dce6f5">`).join('')}
+                    </div>
+                </div>
+
+                <div class="toggle-section">
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('correctSolutions${realIndex}')">✅ Правильные решения</button>
+                    <div class="hidden-content" id="correctSolutions${realIndex}">
+                        ${test.tasks.map(t => `<p><strong>Задание ${t.num}:</strong><br>${formatContent(t.correctSolution)}</p><hr style="margin:10px 0;border:none;border-top:1px solid #dce6f5">`).join('')}
                     </div>
                 </div>
                 
@@ -585,7 +642,7 @@ function addTaskForm(num, existingData = null) {
     div.id = `taskForm${taskCount}`;
     div.innerHTML = `
         <h4>Задание ${num} <span class="task-max-info">(макс. ${maxScore} балл${maxScore > 1 ? 'а' : ''})</span></h4>
-        <div class="task-topic-fixed">📌 ${topic}</div>
+        <div class="task-topic-fixed"> ${topic}</div>
         <div class="form-group">
             <label>Получено баллов</label>
             <select class="task-got" onchange="calculateScores()">
@@ -593,8 +650,8 @@ function addTaskForm(num, existingData = null) {
             </select>
         </div>
         <div class="form-group">
-            <label>Условие задачи (текст или вставьте/загрузите фото)</label>
-            <textarea class="task-condition" rows="2" placeholder="Введите текст условия или вставьте фото (Ctrl+V)"></textarea>
+            <label>Условие задачи (текст или фото)</label>
+            <textarea class="task-condition" rows="2" placeholder="Введите текст условия или вставьте фото (Ctrl+V)" data-field="condition"></textarea>
             <div class="upload-area" onclick="document.getElementById('conditionFile${taskCount}').click()" ondrop="handleDrop(event, 'condition${taskCount}')" ondragover="event.preventDefault()">
                 📎 Нажмите для загрузки фото или перетащите файл<br>
                 <small>Или вставьте фото: кликните в поле выше и нажмите Ctrl+V</small>
@@ -603,17 +660,24 @@ function addTaskForm(num, existingData = null) {
             <div id="conditionPreview${taskCount}"></div>
         </div>
         <div class="form-group">
-            <label>Решение Влада (фото - вставьте или загрузите)</label>
-            <div class="upload-area" onclick="document.getElementById('solutionFile${taskCount}').click()" ondrop="handleDrop(event, 'solution${taskCount}')" ondragover="event.preventDefault()">
+            <label>Решение Влада (текст или фото)</label>
+            <textarea class="task-student-sol" rows="2" placeholder="Введите текст решения или вставьте фото (Ctrl+V)" data-field="student"></textarea>
+            <div class="upload-area" onclick="document.getElementById('studentFile${taskCount}').click()" ondrop="handleDrop(event, 'student${taskCount}')" ondragover="event.preventDefault()">
                 📎 Нажмите для загрузки фото или перетащите файл<br>
-                <small>Или вставьте фото: нажмите Ctrl+V в любом месте формы</small>
+                <small>Или вставьте фото: кликните в поле выше и нажмите Ctrl+V</small>
             </div>
-            <input type="file" id="solutionFile${taskCount}" accept="image/*" style="display:none" onchange="handleFileSelect(event, 'solution${taskCount}')">
-            <div id="solutionPreview${taskCount}"></div>
+            <input type="file" id="studentFile${taskCount}" accept="image/*" style="display:none" onchange="handleFileSelect(event, 'student${taskCount}')">
+            <div id="studentPreview${taskCount}"></div>
         </div>
         <div class="form-group">
-            <label>Правильное решение (текст или ссылка)</label>
-            <textarea class="task-correct-sol" rows="2"></textarea>
+            <label>Правильное решение (текст или фото)</label>
+            <textarea class="task-correct-sol" rows="2" placeholder="Введите текст решения или вставьте фото (Ctrl+V)" data-field="correct"></textarea>
+            <div class="upload-area" onclick="document.getElementById('correctFile${taskCount}').click()" ondrop="handleDrop(event, 'correct${taskCount}')" ondragover="event.preventDefault()">
+                📎 Нажмите для загрузки фото или перетащите файл<br>
+                <small>Или вставьте фото: кликните в поле выше и нажмите Ctrl+V</small>
+            </div>
+            <input type="file" id="correctFile${taskCount}" accept="image/*" style="display:none" onchange="handleFileSelect(event, 'correct${taskCount}')">
+            <div id="correctPreview${taskCount}"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div class="form-group">
@@ -639,8 +703,6 @@ function addTaskForm(num, existingData = null) {
     
     if (existingData) {
         div.querySelector('.task-got').value = existingData.got || 0;
-        div.querySelector('.task-condition').value = existingData.condition && !existingData.condition.startsWith('data:image') ? existingData.condition : '';
-        div.querySelector('.task-correct-sol').value = existingData.correctSolution || '';
         div.querySelector('.task-error').value = existingData.errorType || '';
         div.querySelector('.task-comment').value = existingData.comment || '';
         
@@ -649,13 +711,26 @@ function addTaskForm(num, existingData = null) {
             preview.innerHTML = `<img src="${existingData.condition}" class="img-preview" onclick="openImageViewer('${existingData.condition}')" alt="Изображение">`;
             preview.dataset.image = existingData.condition;
             preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+        } else {
+            div.querySelector('.task-condition').value = existingData.condition || '';
         }
         
-        if (existingData.studentSolution) {
-            const preview = document.getElementById(`solutionPreview${taskCount}`);
+        if (existingData.studentSolution && existingData.studentSolution.startsWith('data:image')) {
+            const preview = document.getElementById(`studentPreview${taskCount}`);
             preview.innerHTML = `<img src="${existingData.studentSolution}" class="img-preview" onclick="openImageViewer('${existingData.studentSolution}')" alt="Изображение">`;
             preview.dataset.image = existingData.studentSolution;
             preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+        } else {
+            div.querySelector('.task-student-sol').value = existingData.studentSolution || '';
+        }
+        
+        if (existingData.correctSolution && existingData.correctSolution.startsWith('data:image')) {
+            const preview = document.getElementById(`correctPreview${taskCount}`);
+            preview.innerHTML = `<img src="${existingData.correctSolution}" class="img-preview" onclick="openImageViewer('${existingData.correctSolution}')" alt="Изображение">`;
+            preview.dataset.image = existingData.correctSolution;
+            preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+        } else {
+            div.querySelector('.task-correct-sol').value = existingData.correctSolution || '';
         }
     }
     
@@ -681,7 +756,7 @@ function processFile(file, type) {
     
     const reader = new FileReader();
     reader.onload = function(event) {
-        const taskId = type.replace('condition', '').replace('solution', '');
+        const taskId = type.replace('condition', '').replace('student', '').replace('correct', '');
         const preview = document.getElementById(type + 'Preview' + taskId);
         preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
         preview.dataset.image = event.target.result;
@@ -712,14 +787,15 @@ function saveTest() {
         totalPrimary += got;
         
         const conditionPreview = document.getElementById(`conditionPreview${index + 1}`);
-        const solutionPreview = document.getElementById(`solutionPreview${index + 1}`);
+        const studentPreview = document.getElementById(`studentPreview${index + 1}`);
+        const correctPreview = document.getElementById(`correctPreview${index + 1}`);
         
         tasks.push({
             num: taskNum,
             topic: taskTopics[taskNum],
             condition: conditionPreview.dataset.image || form.querySelector('.task-condition').value,
-            studentSolution: solutionPreview.dataset.image || '',
-            correctSolution: form.querySelector('.task-correct-sol').value,
+            studentSolution: studentPreview.dataset.image || form.querySelector('.task-student-sol').value,
+            correctSolution: correctPreview.dataset.image || form.querySelector('.task-correct-sol').value,
             max: max,
             got: got,
             correct: got === max,
@@ -741,13 +817,11 @@ function saveTest() {
     
     tests.sort((a,b) => a.number - b.number);
     
-    // Save to localStorage
     localStorage.setItem('vladMathTests', JSON.stringify(tests));
     
     closeModal();
     renderAll();
     
-    // Remind to export
     setTimeout(() => {
         if (confirm('Данные сохранены! Хотите сразу экспортировать JSON для загрузки на GitHub?')) {
             exportData();
@@ -771,11 +845,9 @@ function deleteTest(index) {
 function exportData() {
     const dataStr = JSON.stringify(tests, null, 2);
     
-    // Copy to clipboard
     navigator.clipboard.writeText(dataStr).then(() => {
         alert('✅ Данные скопированы в буфер обмена!\n\nТеперь:\n1. Откройте GitHub\n2. Перейдите в файл data.json\n3. Нажмите "Edit this file"\n4. Удалите старое содержимое\n5. Вставьте новые данные (Ctrl+V)\n6. Нажмите "Commit changes"');
     }).catch(() => {
-        // Fallback: download file
         const blob = new Blob([dataStr], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -831,12 +903,10 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeImageViewer();
 });
 
-// Load data from GitHub or localStorage
 async function loadData() {
     if (isGitHubPages) {
-        // Try to load from GitHub
         try {
-            const response = await fetch('data.json');
+            const response = await fetch('data.json?t=' + Date.now());
             if (response.ok) {
                 tests = await response.json();
                 renderAll();
@@ -847,7 +917,6 @@ async function loadData() {
         }
     }
     
-    // Load from localStorage
     const saved = localStorage.getItem('vladMathTests');
     if (saved) {
         tests = JSON.parse(saved);
