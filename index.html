@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЕГЭ Математика 2026/2027 - Трекер Влада</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --primary: #4a6fa5;
+            --primary-light: #dce6f5;
+            --text-main: #2c3e50;
+            --text-secondary: #6b7c93;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --warning: #f39c12;
+            --border-radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        body { background: var(--bg-color); color: var(--text-main); padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+        h1 { text-align: center; color: var(--primary); margin-bottom: 30px; font-weight: 600; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(74,111,165,0.08); text-align: center; }
+        .stat-value { font-size: 2em; font-weight: 700; color: var(--primary); }
+        .stat-label { color: var(--text-secondary); font-size: 0.9em; margin-top: 5px; }
+
+        .goal-banner {
+            background: linear-gradient(135deg, var(--primary) 0%, #6b8cbc 100%);
+            color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(74,111,165,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .goal-banner:hover { transform: translateY(-2px); }
+        .goal-banner h2 { font-size: 1.3em; margin-bottom: 10px; }
+        .goal-banner .goal-value { font-size: 2.5em; font-weight: 700; margin: 10px 0; }
+        .goal-banner .goal-text { font-size: 1.1em; opacity: 0.9; }
+
+        .chart-container { background: var(--card-bg); padding: 20px; border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(74,111,165,0.08); margin-bottom: 30px; height: 300px; }
+
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #3a5a8a; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-right: 10px; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85em; }
+        .btn-edit { background: var(--warning); color: white; }
+        .btn-edit:hover { background: #d68910; }
+        .btn-delete { border-color:#e74c3c;color:#e74c3c; }
+        .btn-delete:hover { background:#e74c3c;color:white; }
+
+        .test-card { background: var(--card-bg); border-radius: var(--border-radius); margin-bottom: 15px; box-shadow: 0 2px 8px rgba(74,111,165,0.08); overflow: hidden; }
+        .test-header { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--primary-light); flex-wrap: wrap; gap: 10px; }
+        .test-header:hover { filter: brightness(0.97); }
+        .test-title { font-weight: 600; font-size: 1.1em; }
+        .test-meta { display: flex; gap: 15px; font-size: 0.9em; color: var(--text-secondary); flex-wrap: wrap; }
+        .test-content { padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .test-content.open { max-height: 5000px; padding: 20px; transition: max-height 0.5s ease-in; }
+        .test-content .goal-achieved { 
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: none;
+        }
+        .test-content .goal-achieved.show { display: block; }
+
+        .task-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9em; }
+        .task-table th, .task-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--primary-light); }
+        .task-table th { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .correct { color: var(--success); font-weight: 600; }
+        .incorrect { color: var(--error); font-weight: 600; }
+
+        .toggle-section { margin: 10px 0; }
+        .hidden-content { display: none; margin-top: 10px; padding: 15px; background: var(--bg-color); border-radius: 8px; }
+        .hidden-content.show { display: block; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: var(--border-radius); width: 90%; max-width: 900px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--primary); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 1em; }
+        .task-form { background: var(--bg-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .task-form h4 { margin-bottom: 10px; color: var(--primary); }
+
+        .actions-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        .img-preview { max-width: 200px; max-height: 150px; border-radius: 8px; margin-top: 5px; cursor: zoom-in; border: 2px solid var(--primary-light); transition: border-color 0.2s; }
+        .img-preview:hover { border-color: var(--primary); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        .upload-area { 
+            border: 2px dashed var(--primary-light); 
+            border-radius: 8px; 
+            padding: 15px; 
+            text-align: center; 
+            cursor: pointer;
+            margin-top: 5px;
+            transition: all 0.2s;
+        }
+        .upload-area:hover { border-color: var(--primary); background: var(--primary-light); }
+        .upload-area.has-image { border-style: solid; border-color: var(--success); }
+        
+        .score-display { 
+            background: var(--primary-light); 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        .score-primary { color: var(--primary); font-size: 1.2em; }
+        .score-secondary { color: var(--success); font-size: 1.4em; }
+        .score-goal { color: var(--warning); font-size: 1.1em; margin-top: 5px; }
+        .score-goal.achieved { color: var(--success); }
+
+        .task-max-info { font-size: 0.8em; color: var(--text-secondary); margin-left: 5px; }
+        .task-topic-fixed { 
+            background: var(--primary-light); 
+            padding: 8px 12px; 
+            border-radius: 6px; 
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        
+        .button-group { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+
+        .goal-input-group {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--warning);
+        }
+
+        .image-viewer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+        .image-viewer.active { display: flex; }
+        .image-viewer img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .image-viewer .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+
+        .view-mode-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        .view-mode-notice.show { display: block; }
+
+        @media (max-width: 768px) {
+            .test-header { flex-direction: column; align-items: flex-start; }
+            .test-meta { flex-direction: column; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 ЕГЭ Математика 2026/2027 — Трекер Влада</h1>
+
+    <div class="view-mode-notice" id="viewModeNotice">
+        👁️ Режим просмотра. Для редактирования откройте сайт на ноутбуке.
+    </div>
+
+    <div class="goal-banner" id="goalBanner">
+        <h2>🎯 Целевой результат</h2>
+        <div class="goal-value" id="goalValue">80+ баллов</div>
+        <div class="goal-text">Нажмите, чтобы изменить цель</div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+    
+    <div class="chart-container">
+        <canvas id="progressChart"></canvas>
+    </div>
+
+    <div class="actions-bar" id="actionsBar">
+        <button class="btn btn-primary" onclick="openModal()">➕ Добавить пробник</button>
+        <button class="btn btn-outline" onclick="exportData()">💾 Экспорт JSON</button>
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📂 Импорт JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+    </div>
+
+    <div id="testsList"></div>
+
+    <div class="image-viewer" id="imageViewer" onclick="closeImageViewer()">
+        <span class="close-btn">&times;</span>
+        <img id="viewerImage" src="" alt="Полноразмерное изображение">
+    </div>
+
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom:20px; color:var(--primary)" id="modalTitle">Новый пробник</h2>
+            <div class="form-group">
+                <label>Дата</label>
+                <input type="date" id="testDate">
+            </div>
+            <div class="form-group">
+                <label>Номер пробника</label>
+                <input type="number" id="testNumber" min="1">
+            </div>
+            <div class="goal-input-group">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>🎯 Целевой балл для этого пробника</label>
+                    <input type="number" id="targetScore" min="0" max="100" placeholder="Например: 80">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Общий вывод</label>
+                <textarea id="testConclusion" rows="3"></textarea>
+            </div>
+
+            <div class="score-display">
+                <div>Первичный балл: <span class="score-primary" id="totalPrimary">0</span> / 32</div>
+                <div style="margin-top:5px">Вторичный балл: <span class="score-secondary" id="totalSecondary">0</span> / 100</div>
+                <div class="score-goal" id="scoreGoal"></div>
+            </div>
+
+            <h3 style="margin: 20px 0 10px; color:var(--primary)">Задания (всего 19)</h3>
+            <div id="tasksContainer"></div>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end">
+                <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="saveTest()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const taskTopics = {
+    1: "Планиметрия (простейшая)", 2: "Векторы", 3: "Стереометрия (простейшая)",
+    4: "Теория вероятностей (простая)", 5: "Теория вероятностей (сложная)",
+    6: "Уравнения (простейшие)", 7: "Вычисления и преобразования",
+    8: "Производная и первообразная", 9: "Прикладная задача", 10: "Текстовая задача",
+    11: "Графики функций", 12: "Анализ функций", 13: "Уравнения", 14: "Стереометрия",
+    15: "Неравенства", 16: "Экономическая задача", 17: "Планиметрия",
+    18: "Задача с параметром", 19: "Числа и их свойства"
+};
+
+const conversionTable = {
+    1: 6, 2: 11, 3: 17, 4: 22, 5: 27, 6: 34, 7: 40, 8: 46, 9: 52, 10: 58,
+    11: 64, 12: 70, 13: 72, 14: 74, 15: 76, 16: 78, 17: 80, 18: 82, 19: 84,
+    20: 86, 21: 88, 22: 90, 23: 92, 24: 94, 25: 95, 26: 96, 27: 97, 28: 98,
+    29: 99, 30: 100, 31: 100, 32: 100
+};
+
+const taskMaxScores = {
+    1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 2,
+    13: 2, 14: 3, 15: 2, 16: 2, 17: 3, 18: 4, 19: 4
+};
+
+let tests = [];
+let chartInstance = null;
+let editingIndex = null;
+let globalGoal = 80;
+let isViewMode = false;
+
+// Check if we're on GitHub Pages (view mode)
+const isGitHubPages = window.location.hostname.includes('github.io');
+
+if (isGitHubPages) {
+    isViewMode = true;
+    document.getElementById('viewModeNotice').classList.add('show');
+    document.getElementById('actionsBar').style.display = 'none';
+    document.getElementById('goalBanner').style.cursor = 'default';
+}
+
+function openImageViewer(src) {
+    document.getElementById('viewerImage').src = src;
+    document.getElementById('imageViewer').classList.add('active');
+}
+
+function closeImageViewer() {
+    document.getElementById('imageViewer').classList.remove('active');
+}
+
+document.addEventListener('paste', function(e) {
+    if (isViewMode) return;
+    
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const activeElement = document.activeElement;
+            const taskForm = activeElement.closest('.task-form');
+            if (taskForm) {
+                e.preventDefault();
+                const formId = taskForm.id.replace('taskForm', '');
+                const blob = items[i].getAsFile();
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    if (activeElement.classList.contains('task-condition')) {
+                        const preview = document.getElementById('conditionPreview' + formId);
+                        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
+                        preview.dataset.image = event.target.result;
+                        preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+                    } else {
+                        const preview = document.getElementById('solutionPreview' + formId);
+                        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
+                        preview.dataset.image = event.target.result;
+                        preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+                    }
+                };
+                reader.readAsDataURL(blob);
+            }
+        }
+    }
+});
+
+function convertToSecondary(primary) {
+    return conversionTable[primary] || 0;
+}
+
+function calculateScores() {
+    let totalPrimary = 0;
+    document.querySelectorAll('.task-form').forEach(form => {
+        const got = parseInt(form.querySelector('.task-got').value) || 0;
+        totalPrimary += got;
+    });
+    
+    const secondary = convertToSecondary(totalPrimary);
+    const targetScore = parseInt(document.getElementById('targetScore').value) || globalGoal;
+    
+    document.getElementById('totalPrimary').textContent = totalPrimary;
+    document.getElementById('totalSecondary').textContent = secondary;
+    
+    const goalElement = document.getElementById('scoreGoal');
+    if (targetScore) {
+        const diff = secondary - targetScore;
+        if (diff >= 0) {
+            goalElement.textContent = `✓ Цель достигнута! (+${diff} к цели)`;
+            goalElement.className = 'score-goal achieved';
+        } else {
+            goalElement.textContent = `До цели: ${Math.abs(diff)} баллов`;
+            goalElement.className = 'score-goal';
+        }
+    }
+    
+    return { primary: totalPrimary, secondary };
+}
+
+function renderAll() {
+    renderStats();
+    renderChart();
+    renderTests();
+    updateGoalBanner();
+}
+
+function updateGoalBanner() {
+    document.getElementById('goalValue').textContent = globalGoal + '+ баллов';
+}
+
+function renderStats() {
+    const total = tests.length;
+    const avgPercent = total ? Math.round(tests.reduce((s,t) => s + t.percent, 0) / total) : 0;
+    const bestSecondary = total ? Math.max(...tests.map(t => t.secondary)) : 0;
+    const lastSecondary = total ? tests[tests.length-1].secondary : 0;
+
+    document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Пробников</div></div>
+        <div class="stat-card"><div class="stat-value">${avgPercent}%</div><div class="stat-label">Средний %</div></div>
+        <div class="stat-card"><div class="stat-value">${bestSecondary}</div><div class="stat-label">Лучший вторичный</div></div>
+        <div class="stat-card"><div class="stat-value">${lastSecondary}</div><div class="stat-label">Последний вторичный</div></div>
+    `;
+}
+
+function renderChart() {
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+    
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: tests.map(t => `#${t.number}`),
+            datasets: [{
+                label: 'Вторичные баллы',
+                data: tests.map(t => t.secondary),
+                backgroundColor: tests.map(t => t.secondary >= globalGoal ? 'rgba(39,174,96,0.7)' : 'rgba(74,111,165,0.7)'),
+                borderColor: tests.map(t => t.secondary >= globalGoal ? '#27ae60' : '#4a6fa5'),
+                borderWidth: 2
+            },
+            {
+                label: 'Цель',
+                data: tests.map(() => globalGoal),
+                type: 'line',
+                borderColor: '#f39c12',
+                borderWidth: 3,
+                borderDash: [5, 5],
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100, title: { display: true, text: 'Вторичные баллы (из 100)' } }
+            }
+        }
+    });
+}
+
+function renderTests() {
+    const container = document.getElementById('testsList');
+    container.innerHTML = '';
+    
+    [...tests].reverse().forEach((test, idx) => {
+        const realIndex = tests.length - 1 - idx;
+        const goalAchieved = test.secondary >= globalGoal;
+        const card = document.createElement('div');
+        card.className = 'test-card';
+        card.innerHTML = `
+            <div class="test-header" onclick="toggleTest(${realIndex})">
+                <div class="test-title">Пробник #${test.number} — ${test.date}</div>
+                <div class="test-meta">
+                    <span>📝 Первичный: ${test.primary}/32</span>
+                    <span>🎯 Вторичный: ${test.secondary}/100</span>
+                    <span> ${test.percent}%</span>
+                    ${goalAchieved ? '<span style="color: var(--success); font-weight: 600;">✓ Цель!</span>' : ''}
+                </div>
+            </div>
+            <div class="test-content" id="testContent${realIndex}">
+                ${goalAchieved ? '<div class="goal-achieved show">🎉 Поздравляем! Цель в ' + globalGoal + ' баллов достигнута!</div>' : ''}
+                <p><strong>Вывод:</strong> ${test.conclusion || '—'}</p>
+                
+                <div class="toggle-section">
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('tasks${realIndex}')">📋 Таблица результатов</button>
+                    <div class="hidden-content" id="tasks${realIndex}">
+                        <table class="task-table">
+                            <tr><th>№</th><th>Тема</th><th>Макс</th><th>Получено</th><th>Результат</th><th>Тип ошибки</th><th>Комментарий</th></tr>
+                            ${test.tasks.map(t => `
+                                <tr>
+                                    <td>${t.num}</td>
+                                    <td>${t.topic}</td>
+                                    <td>${t.max}</td>
+                                    <td>${t.got}</td>
+                                    <td class="${t.correct ? 'correct' : 'incorrect'}">${t.correct ? '✓' : '✗'}</td>
+                                    <td>${t.errorType || '—'}</td>
+                                    <td>${t.comment || '—'}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="toggle-section">
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('conditions${realIndex}')">📄 Условия задач</button>
+                    <div class="hidden-content" id="conditions${realIndex}">
+                        ${test.tasks.map(t => `<p><strong>Задание ${t.num}:</strong><br>${formatContent(t.condition)}</p><hr style="margin:10px 0;border:none;border-top:1px solid #dce6f5">`).join('')}
+                    </div>
+                </div>
+
+                <div class="toggle-section">
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('solutions${realIndex}')">✏️ Решения Влада (фото)</button>
+                    <div class="hidden-content" id="solutions${realIndex}">
+                        ${test.tasks.map(t => `<p><strong>Задание ${t.num}:</strong><br>${formatContent(t.studentSolution)}</p><hr style="margin:10px 0;border:none;border-top:1px solid #dce6f5">`).join('')}
+                    </div>
+                </div>
+                
+                ${!isViewMode ? `
+                <div class="button-group">
+                    <button class="btn btn-edit btn-sm" onclick="editTest(${realIndex}); event.stopPropagation();">✏️ Редактировать</button>
+                    <button class="btn btn-delete btn-sm" onclick="deleteTest(${realIndex}); event.stopPropagation();">🗑 Удалить</button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function formatContent(content) {
+    if (!content) return '—';
+    if (content.startsWith('data:image')) {
+        return `<img src="${content}" class="img-preview" onclick="openImageViewer('${content}')" alt="Изображение">`;
+    }
+    return content.replace(/\n/g, '<br>');
+}
+
+function toggleTest(index) {
+    document.getElementById(`testContent${index}`).classList.toggle('open');
+}
+
+function toggleSection(id) {
+    document.getElementById(id).classList.toggle('show');
+}
+
+let taskCount = 0;
+
+function openModal() {
+    if (isViewMode) {
+        alert('Редактирование доступно только на ноутбуке');
+        return;
+    }
+    
+    editingIndex = null;
+    document.getElementById('modalTitle').textContent = 'Новый пробник';
+    document.getElementById('addModal').classList.add('active');
+    document.getElementById('testDate').valueAsDate = new Date();
+    document.getElementById('testNumber').value = tests.length + 1;
+    document.getElementById('targetScore').value = globalGoal;
+    document.getElementById('testConclusion').value = '';
+    document.getElementById('tasksContainer').innerHTML = '';
+    document.getElementById('totalPrimary').textContent = '0';
+    document.getElementById('totalSecondary').textContent = '0';
+    document.getElementById('scoreGoal').textContent = '';
+    taskCount = 0;
+    
+    for(let i = 1; i <= 19; i++) {
+        addTaskForm(i);
+    }
+}
+
+function closeModal() {
+    document.getElementById('addModal').classList.remove('active');
+}
+
+function editTest(index) {
+    if (isViewMode) {
+        alert('Редактирование доступно только на ноутбуке');
+        return;
+    }
+    
+    editingIndex = index;
+    const test = tests[index];
+    
+    document.getElementById('modalTitle').textContent = 'Редактировать пробник #' + test.number;
+    document.getElementById('addModal').classList.add('active');
+    document.getElementById('testDate').value = test.date;
+    document.getElementById('testNumber').value = test.number;
+    document.getElementById('targetScore').value = test.targetScore || globalGoal;
+    document.getElementById('testConclusion').value = test.conclusion || '';
+    document.getElementById('tasksContainer').innerHTML = '';
+    taskCount = 0;
+    
+    test.tasks.forEach((task) => {
+        addTaskForm(task.num, task);
+    });
+    
+    calculateScores();
+}
+
+function addTaskForm(num, existingData = null) {
+    taskCount++;
+    const maxScore = taskMaxScores[num];
+    const topic = taskTopics[num];
+    const div = document.createElement('div');
+    div.className = 'task-form';
+    div.id = `taskForm${taskCount}`;
+    div.innerHTML = `
+        <h4>Задание ${num} <span class="task-max-info">(макс. ${maxScore} балл${maxScore > 1 ? 'а' : ''})</span></h4>
+        <div class="task-topic-fixed">📌 ${topic}</div>
+        <div class="form-group">
+            <label>Получено баллов</label>
+            <select class="task-got" onchange="calculateScores()">
+                ${Array.from({length: maxScore + 1}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Условие задачи (текст или вставьте/загрузите фото)</label>
+            <textarea class="task-condition" rows="2" placeholder="Введите текст условия или вставьте фото (Ctrl+V)"></textarea>
+            <div class="upload-area" onclick="document.getElementById('conditionFile${taskCount}').click()" ondrop="handleDrop(event, 'condition${taskCount}')" ondragover="event.preventDefault()">
+                📎 Нажмите для загрузки фото или перетащите файл<br>
+                <small>Или вставьте фото: кликните в поле выше и нажмите Ctrl+V</small>
+            </div>
+            <input type="file" id="conditionFile${taskCount}" accept="image/*" style="display:none" onchange="handleFileSelect(event, 'condition${taskCount}')">
+            <div id="conditionPreview${taskCount}"></div>
+        </div>
+        <div class="form-group">
+            <label>Решение Влада (фото - вставьте или загрузите)</label>
+            <div class="upload-area" onclick="document.getElementById('solutionFile${taskCount}').click()" ondrop="handleDrop(event, 'solution${taskCount}')" ondragover="event.preventDefault()">
+                📎 Нажмите для загрузки фото или перетащите файл<br>
+                <small>Или вставьте фото: нажмите Ctrl+V в любом месте формы</small>
+            </div>
+            <input type="file" id="solutionFile${taskCount}" accept="image/*" style="display:none" onchange="handleFileSelect(event, 'solution${taskCount}')">
+            <div id="solutionPreview${taskCount}"></div>
+        </div>
+        <div class="form-group">
+            <label>Правильное решение (текст или ссылка)</label>
+            <textarea class="task-correct-sol" rows="2"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group">
+                <label>Тип ошибки</label>
+                <select class="task-error">
+                    <option value="">Нет ошибки</option>
+                    <option>Невнимательность</option>
+                    <option>Незнание формулы</option>
+                    <option>Неверное применение метода</option>
+                    <option>Вычислительная ошибка</option>
+                    <option>Не понял условие</option>
+                    <option>Не успел</option>
+                    <option>Логическая ошибка</option>
+                    <option>Другое</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Комментарий</label>
+                <input type="text" class="task-comment" placeholder="Краткая заметка">
+            </div>
+        </div>
+    `;
+    
+    if (existingData) {
+        div.querySelector('.task-got').value = existingData.got || 0;
+        div.querySelector('.task-condition').value = existingData.condition && !existingData.condition.startsWith('data:image') ? existingData.condition : '';
+        div.querySelector('.task-correct-sol').value = existingData.correctSolution || '';
+        div.querySelector('.task-error').value = existingData.errorType || '';
+        div.querySelector('.task-comment').value = existingData.comment || '';
+        
+        if (existingData.condition && existingData.condition.startsWith('data:image')) {
+            const preview = document.getElementById(`conditionPreview${taskCount}`);
+            preview.innerHTML = `<img src="${existingData.condition}" class="img-preview" onclick="openImageViewer('${existingData.condition}')" alt="Изображение">`;
+            preview.dataset.image = existingData.condition;
+            preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+        }
+        
+        if (existingData.studentSolution) {
+            const preview = document.getElementById(`solutionPreview${taskCount}`);
+            preview.innerHTML = `<img src="${existingData.studentSolution}" class="img-preview" onclick="openImageViewer('${existingData.studentSolution}')" alt="Изображение">`;
+            preview.dataset.image = existingData.studentSolution;
+            preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+        }
+    }
+    
+    document.getElementById('tasksContainer').appendChild(div);
+}
+
+function handleDrop(e, type) {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) processFile(files[0], type);
+}
+
+function handleFileSelect(e, type) {
+    const files = e.target.files;
+    if (files.length > 0) processFile(files[0], type);
+}
+
+function processFile(file, type) {
+    if (file.type.indexOf('image') === -1) {
+        alert('Пожалуйста, выберите изображение');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const taskId = type.replace('condition', '').replace('solution', '');
+        const preview = document.getElementById(type + 'Preview' + taskId);
+        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
+        preview.dataset.image = event.target.result;
+        preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveTest() {
+    if (isViewMode) {
+        alert('Редактирование доступно только на ноутбуке');
+        return;
+    }
+    
+    const date = document.getElementById('testDate').value;
+    const number = parseInt(document.getElementById('testNumber').value);
+    const targetScore = parseInt(document.getElementById('targetScore').value) || globalGoal;
+    const conclusion = document.getElementById('testConclusion').value;
+
+    const taskForms = document.querySelectorAll('.task-form');
+    let tasks = [];
+    let totalPrimary = 0;
+
+    taskForms.forEach((form, index) => {
+        const taskNum = index + 1;
+        const max = taskMaxScores[taskNum];
+        const got = parseInt(form.querySelector('.task-got').value) || 0;
+        totalPrimary += got;
+        
+        const conditionPreview = document.getElementById(`conditionPreview${index + 1}`);
+        const solutionPreview = document.getElementById(`solutionPreview${index + 1}`);
+        
+        tasks.push({
+            num: taskNum,
+            topic: taskTopics[taskNum],
+            condition: conditionPreview.dataset.image || form.querySelector('.task-condition').value,
+            studentSolution: solutionPreview.dataset.image || '',
+            correctSolution: form.querySelector('.task-correct-sol').value,
+            max: max,
+            got: got,
+            correct: got === max,
+            errorType: form.querySelector('.task-error').value,
+            comment: form.querySelector('.task-comment').value
+        });
+    });
+
+    const secondary = convertToSecondary(totalPrimary);
+    const percent = Math.round((totalPrimary / 32) * 100);
+
+    const testData = { date, number, targetScore, primary: totalPrimary, secondary, percent, conclusion, tasks };
+    
+    if (editingIndex !== null) {
+        tests[editingIndex] = testData;
+    } else {
+        tests.push(testData);
+    }
+    
+    tests.sort((a,b) => a.number - b.number);
+    
+    // Save to localStorage
+    localStorage.setItem('vladMathTests', JSON.stringify(tests));
+    
+    closeModal();
+    renderAll();
+    
+    // Remind to export
+    setTimeout(() => {
+        if (confirm('Данные сохранены! Хотите сразу экспортировать JSON для загрузки на GitHub?')) {
+            exportData();
+        }
+    }, 500);
+}
+
+function deleteTest(index) {
+    if (isViewMode) {
+        alert('Удаление доступно только на ноутбуке');
+        return;
+    }
+    
+    if(confirm('Удалить этот пробник?')) {
+        tests.splice(index, 1);
+        localStorage.setItem('vladMathTests', JSON.stringify(tests));
+        renderAll();
+    }
+}
+
+function exportData() {
+    const dataStr = JSON.stringify(tests, null, 2);
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(dataStr).then(() => {
+        alert('✅ Данные скопированы в буфер обмена!\n\nТеперь:\n1. Откройте GitHub\n2. Перейдите в файл data.json\n3. Нажмите "Edit this file"\n4. Удалите старое содержимое\n5. Вставьте новые данные (Ctrl+V)\n6. Нажмите "Commit changes"');
+    }).catch(() => {
+        // Fallback: download file
+        const blob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `data_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('Файл скачан. Загрузите его содержимое на GitHub в файл data.json');
+    });
+}
+
+function importData(input) {
+    if (isViewMode) {
+        alert('Импорт доступен только на ноутбуке');
+        return;
+    }
+    
+    const file = input.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if(Array.isArray(data)) {
+                if(confirm(`Импортировать ${data.length} пробников?`)) {
+                    tests = data;
+                    localStorage.setItem('vladMathTests', JSON.stringify(tests));
+                    renderAll();
+                }
+            }
+        } catch(err) {
+            alert('Ошибка: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
+
+document.getElementById('goalBanner').addEventListener('click', function() {
+    if (isViewMode) return;
+    
+    const newGoal = prompt('Введите целевой балл (0-100):', globalGoal);
+    if (newGoal !== null) {
+        const value = parseInt(newGoal);
+        if (value >= 0 && value <= 100) {
+            globalGoal = value;
+            renderAll();
+        }
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeImageViewer();
+});
+
+// Load data from GitHub or localStorage
+async function loadData() {
+    if (isGitHubPages) {
+        // Try to load from GitHub
+        try {
+            const response = await fetch('data.json');
+            if (response.ok) {
+                tests = await response.json();
+                renderAll();
+                return;
+            }
+        } catch (e) {
+            console.log('Could not load from GitHub');
+        }
+    }
+    
+    // Load from localStorage
+    const saved = localStorage.getItem('vladMathTests');
+    if (saved) {
+        tests = JSON.parse(saved);
+    }
+    renderAll();
+}
+
+loadData();
+</script>
+</body>
+</html>
