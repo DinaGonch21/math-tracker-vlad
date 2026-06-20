@@ -76,7 +76,6 @@
         }
         .test-content .goal-achieved.show { display: block; }
 
-        /* Адаптивная таблица */
         .table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -213,7 +212,6 @@
             font-weight: 600;
         }
 
-        /* Подсказка о прокрутке таблицы на мобильных */
         .table-scroll-hint {
             display: none;
             text-align: center;
@@ -372,9 +370,12 @@ document.addEventListener('paste', function(e) {
                 reader.onload = function(event) {
                     const fieldName = activeElement.dataset.field || 'condition';
                     const preview = document.getElementById(fieldName + 'Preview' + formId);
-                    preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
-                    preview.dataset.image = event.target.result;
-                    preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
+                        preview.dataset.image = event.target.result;
+                        const uploadArea = preview.parentElement.querySelector('.upload-area');
+                        if (uploadArea) uploadArea.classList.add('has-image');
+                    }
                 };
                 reader.readAsDataURL(blob);
             }
@@ -495,8 +496,8 @@ function renderTests() {
             <div class="test-header" onclick="toggleTest(${realIndex})">
                 <div class="test-title">Пробник #${test.number} — ${formatDate(test.date)}</div>
                 <div class="test-meta">
-                    <span>📝 Первичный: ${test.primary}/32</span>
-                    <span> Вторичный: ${test.secondary}/100</span>
+                    <span> Первичный: ${test.primary}/32</span>
+                    <span>🎯 Вторичный: ${test.secondary}/100</span>
                     <span class="target-badge">🎯 Цель: ${targetDisplay}</span>
                     <span>📊 ${test.percent}%</span>
                     ${goalAchieved ? '<span style="color: var(--success); font-weight: 600;">✓ Цель!</span>' : ''}
@@ -530,7 +531,7 @@ function renderTests() {
                 </div>
                 
                 <div class="toggle-section">
-                    <button class="btn btn-outline btn-sm" onclick="toggleSection('conditions${realIndex}')"> Условия задач</button>
+                    <button class="btn btn-outline btn-sm" onclick="toggleSection('conditions${realIndex}')">📄 Условия задач</button>
                     <div class="hidden-content" id="conditions${realIndex}">
                         ${test.tasks.map(t => `<p><strong>Задание ${t.num}:</strong><br>${formatContent(t.condition)}</p><hr style="margin:10px 0;border:none;border-top:1px solid #dce6f5">`).join('')}
                     </div>
@@ -552,7 +553,7 @@ function renderTests() {
                 
                 ${!isViewMode ? `
                 <div class="button-group">
-                    <button class="btn btn-edit btn-sm" onclick="editTest(${realIndex}); event.stopPropagation();">✏️ Редактировать</button>
+                    <button class="btn btn-edit btn-sm" onclick="editTest(${realIndex}); event.stopPropagation();">️ Редактировать</button>
                     <button class="btn btn-delete btn-sm" onclick="deleteTest(${realIndex}); event.stopPropagation();">🗑 Удалить</button>
                 </div>
                 ` : ''}
@@ -624,25 +625,35 @@ function editTest(index) {
     document.getElementById('targetScore').value = test.targetScore || globalGoal;
     document.getElementById('testConclusion').value = test.conclusion || '';
     document.getElementById('tasksContainer').innerHTML = '';
+    document.getElementById('totalPrimary').textContent = '0';
+    document.getElementById('totalSecondary').textContent = '0';
+    document.getElementById('scoreGoal').textContent = '';
     taskCount = 0;
     
-    test.tasks.forEach((task) => {
-        addTaskForm(task.num, task);
-    });
+    // Создаём формы для всех 19 заданий
+    for(let i = 1; i <= 19; i++) {
+        // Находим данные для этого задания
+        const taskData = test.tasks.find(t => t.num === i);
+        addTaskForm(i, taskData || null);
+    }
     
-    calculateScores();
+    // Заполняем баллы после создания всех форм
+    setTimeout(() => {
+        calculateScores();
+    }, 100);
 }
 
 function addTaskForm(num, existingData = null) {
     taskCount++;
-    const maxScore = taskMaxScores[num];
-    const topic = taskTopics[num];
+    const maxScore = taskMaxScores[num] || 1;
+    const topic = taskTopics[num] || 'Другое';
     const div = document.createElement('div');
     div.className = 'task-form';
     div.id = `taskForm${taskCount}`;
     div.innerHTML = `
         <h4>Задание ${num} <span class="task-max-info">(макс. ${maxScore} балл${maxScore > 1 ? 'а' : ''})</span></h4>
-        <div class="task-topic-fixed"> ${topic}</div>
+        <div class="task-topic-fixed">📌 ${topic}</div>
+        <input type="hidden" class="task-num" value="${num}">
         <div class="form-group">
             <label>Получено баллов</label>
             <select class="task-got" onchange="calculateScores()">
@@ -701,36 +712,61 @@ function addTaskForm(num, existingData = null) {
         </div>
     `;
     
+    // Заполняем данные, если они есть
     if (existingData) {
-        div.querySelector('.task-got').value = existingData.got || 0;
-        div.querySelector('.task-error').value = existingData.errorType || '';
-        div.querySelector('.task-comment').value = existingData.comment || '';
-        
-        if (existingData.condition && existingData.condition.startsWith('data:image')) {
-            const preview = document.getElementById(`conditionPreview${taskCount}`);
-            preview.innerHTML = `<img src="${existingData.condition}" class="img-preview" onclick="openImageViewer('${existingData.condition}')" alt="Изображение">`;
-            preview.dataset.image = existingData.condition;
-            preview.parentElement.querySelector('.upload-area').classList.add('has-image');
-        } else {
-            div.querySelector('.task-condition').value = existingData.condition || '';
-        }
-        
-        if (existingData.studentSolution && existingData.studentSolution.startsWith('data:image')) {
-            const preview = document.getElementById(`studentPreview${taskCount}`);
-            preview.innerHTML = `<img src="${existingData.studentSolution}" class="img-preview" onclick="openImageViewer('${existingData.studentSolution}')" alt="Изображение">`;
-            preview.dataset.image = existingData.studentSolution;
-            preview.parentElement.querySelector('.upload-area').classList.add('has-image');
-        } else {
-            div.querySelector('.task-student-sol').value = existingData.studentSolution || '';
-        }
-        
-        if (existingData.correctSolution && existingData.correctSolution.startsWith('data:image')) {
-            const preview = document.getElementById(`correctPreview${taskCount}`);
-            preview.innerHTML = `<img src="${existingData.correctSolution}" class="img-preview" onclick="openImageViewer('${existingData.correctSolution}')" alt="Изображение">`;
-            preview.dataset.image = existingData.correctSolution;
-            preview.parentElement.querySelector('.upload-area').classList.add('has-image');
-        } else {
-            div.querySelector('.task-correct-sol').value = existingData.correctSolution || '';
+        try {
+            const gotSelect = div.querySelector('.task-got');
+            if (gotSelect) gotSelect.value = existingData.got || 0;
+            
+            const errorSelect = div.querySelector('.task-error');
+            if (errorSelect) errorSelect.value = existingData.errorType || '';
+            
+            const commentInput = div.querySelector('.task-comment');
+            if (commentInput) commentInput.value = existingData.comment || '';
+            
+            // Условие
+            if (existingData.condition && typeof existingData.condition === 'string' && existingData.condition.startsWith('data:image')) {
+                const preview = document.getElementById(`conditionPreview${taskCount}`);
+                if (preview) {
+                    preview.innerHTML = `<img src="${existingData.condition}" class="img-preview" onclick="openImageViewer('${existingData.condition}')" alt="Изображение">`;
+                    preview.dataset.image = existingData.condition;
+                    const uploadArea = preview.parentElement.querySelector('.upload-area');
+                    if (uploadArea) uploadArea.classList.add('has-image');
+                }
+            } else {
+                const textarea = div.querySelector('.task-condition');
+                if (textarea) textarea.value = existingData.condition || '';
+            }
+            
+            // Решение Влада
+            if (existingData.studentSolution && typeof existingData.studentSolution === 'string' && existingData.studentSolution.startsWith('data:image')) {
+                const preview = document.getElementById(`studentPreview${taskCount}`);
+                if (preview) {
+                    preview.innerHTML = `<img src="${existingData.studentSolution}" class="img-preview" onclick="openImageViewer('${existingData.studentSolution}')" alt="Изображение">`;
+                    preview.dataset.image = existingData.studentSolution;
+                    const uploadArea = preview.parentElement.querySelector('.upload-area');
+                    if (uploadArea) uploadArea.classList.add('has-image');
+                }
+            } else {
+                const textarea = div.querySelector('.task-student-sol');
+                if (textarea) textarea.value = existingData.studentSolution || '';
+            }
+            
+            // Правильное решение
+            if (existingData.correctSolution && typeof existingData.correctSolution === 'string' && existingData.correctSolution.startsWith('data:image')) {
+                const preview = document.getElementById(`correctPreview${taskCount}`);
+                if (preview) {
+                    preview.innerHTML = `<img src="${existingData.correctSolution}" class="img-preview" onclick="openImageViewer('${existingData.correctSolution}')" alt="Изображение">`;
+                    preview.dataset.image = existingData.correctSolution;
+                    const uploadArea = preview.parentElement.querySelector('.upload-area');
+                    if (uploadArea) uploadArea.classList.add('has-image');
+                }
+            } else {
+                const textarea = div.querySelector('.task-correct-sol');
+                if (textarea) textarea.value = existingData.correctSolution || '';
+            }
+        } catch (e) {
+            console.error('Ошибка при заполнении данных задания:', e);
         }
     }
     
@@ -758,9 +794,12 @@ function processFile(file, type) {
     reader.onload = function(event) {
         const taskId = type.replace('condition', '').replace('student', '').replace('correct', '');
         const preview = document.getElementById(type + 'Preview' + taskId);
-        preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
-        preview.dataset.image = event.target.result;
-        preview.parentElement.querySelector('.upload-area').classList.add('has-image');
+        if (preview) {
+            preview.innerHTML = `<img src="${event.target.result}" class="img-preview" onclick="openImageViewer('${event.target.result}')" alt="Изображение">`;
+            preview.dataset.image = event.target.result;
+            const uploadArea = preview.parentElement.querySelector('.upload-area');
+            if (uploadArea) uploadArea.classList.add('has-image');
+        }
     };
     reader.readAsDataURL(file);
 }
@@ -780,22 +819,22 @@ function saveTest() {
     let tasks = [];
     let totalPrimary = 0;
 
-    taskForms.forEach((form, index) => {
-        const taskNum = index + 1;
-        const max = taskMaxScores[taskNum];
+    taskForms.forEach((form) => {
+        const taskNum = parseInt(form.querySelector('.task-num').value);
+        const max = taskMaxScores[taskNum] || 1;
         const got = parseInt(form.querySelector('.task-got').value) || 0;
         totalPrimary += got;
         
-        const conditionPreview = document.getElementById(`conditionPreview${index + 1}`);
-        const studentPreview = document.getElementById(`studentPreview${index + 1}`);
-        const correctPreview = document.getElementById(`correctPreview${index + 1}`);
+        const conditionPreview = document.getElementById(`conditionPreview${form.id.replace('taskForm', '')}`);
+        const studentPreview = document.getElementById(`studentPreview${form.id.replace('taskForm', '')}`);
+        const correctPreview = document.getElementById(`correctPreview${form.id.replace('taskForm', '')}`);
         
         tasks.push({
             num: taskNum,
-            topic: taskTopics[taskNum],
-            condition: conditionPreview.dataset.image || form.querySelector('.task-condition').value,
-            studentSolution: studentPreview.dataset.image || form.querySelector('.task-student-sol').value,
-            correctSolution: correctPreview.dataset.image || form.querySelector('.task-correct-sol').value,
+            topic: taskTopics[taskNum] || 'Другое',
+            condition: (conditionPreview && conditionPreview.dataset.image) || form.querySelector('.task-condition').value,
+            studentSolution: (studentPreview && studentPreview.dataset.image) || form.querySelector('.task-student-sol').value,
+            correctSolution: (correctPreview && correctPreview.dataset.image) || form.querySelector('.task-correct-sol').value,
             max: max,
             got: got,
             correct: got === max,
